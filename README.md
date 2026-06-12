@@ -1,11 +1,9 @@
 # MACL: Multi-level Asymmetric Contrastive Learning for Medical Image Segmentation Pre-training
 
-[IEEE JBHI](https://ieeexplore.ieee.org/search/searchresult.jsp?queryText=Multi-level%20Asymmetric%20Contrastive%20Learning%20for%20Medical%20Image%20Segmentation%20Pre-training)
-[DOI](https://doi.org/10.1109/JBHI.2026.3669549)
-[PubMed](https://pubmed.ncbi.nlm.nih.gov/41774633/)
-[GitHub](https://github.com/stevezs315/MACL)
-[License](LICENSE)
-[Python](https://python.org)
+[![IEEE TIP](https://img.shields.io/badge/IEEE%20JBHI-Paper-blue?logo=ieee)](https://ieeexplore.ieee.org/document/11419737)
+[![GitHub](https://img.shields.io/badge/GitHub-Code-black?logo=github)](https://github.com/stevezs315/MACL)
+[![Homepage](https://img.shields.io/badge/Homepage-Website-green?logo=googlechrome)](https://stevezs315.github.io/)
+
 
 **Shuang Zeng, Lei Zhu, Xinliang Zhang, Qian Chen, Hangzhou He, Lujia Jin, Zifeng Tian, Zhaoheng Xie, Micky C Nnamdi, Wenqi Shi, J Ben Tamo, May D. Wang, Yanye Lu***
 
@@ -21,7 +19,7 @@ Medical image segmentation usually requires large-scale expert annotations, whic
 
 We propose **MACL**, a **M**ulti-level **A**symmetric **C**ontrastive **L**earning framework for medical image segmentation pre-training. MACL introduces an asymmetric one-stage pre-training structure to jointly optimize the encoder and decoder, and learns representations at three complementary levels:
 
-- **Image-level CL**: learns global semantic representations with position-aware contrastive pairs
+- **Image-level global CL**: learns global semantic representations with position-aware contrastive pairs
 - **Pixel-level dense CL**: captures fine-grained local semantics for dense prediction
 - **Feature-level equivariant regularization**: aligns multi-scale feature representations between asymmetric branches
 
@@ -48,8 +46,8 @@ $$
 
 where:
 
-- $\mathcal{L}_{g}$: global image-level contrastive loss
-- $\mathcal{L}_{d}$: dense pixel-level contrastive loss
+- $\mathcal{L}_{g}$: image-level global contrastive loss
+- $\mathcal{L}_{d}$: pixel-level dense contrastive loss
 - $\mathcal{L}_{ER}$: feature-level equivariant regularization loss
 
 **Key modules:**
@@ -58,21 +56,6 @@ where:
 - **Global Contrastive Learning**: learns image-level semantic representations using position-aware positive pairs
 - **Dense Contrastive Learning**: extends contrastive learning to pixel-level projections for fine-grained segmentation features
 - **Equivariant Regularization**: enforces consistency between multi-scale feature representations from two branches
-
----
-
-## Table of Contents
-
-- [Installation](#installation)
-- [Model Weights](#model-weights)
-- [Dataset Preparation](#dataset-preparation)
-- [Pre-training](#pre-training)
-- [Fine-tuning](#fine-tuning)
-- [Evaluation](#evaluation)
-- [Project Structure](#project-structure)
-- [Citation](#citation)
-- [Contact](#contact)
-- [Acknowledgement](#acknowledgement)
 
 ---
 
@@ -152,40 +135,38 @@ The paper follows a unified 2D slice-based pre-processing protocol. Cardiac data
 
 ```bash
 # Pre-train on CHD dataset (CT, for multi-organ segmentation)
-CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nnodes=1 --nproc_per_node=2 --master_port 21678 \
+CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nnodes=1 --nproc_per_node=2 --master_port 21604 \
 train_contrast.py --device cuda:0 \
---model_name UNet2D_MACL --ssl_method MACL \
---dataset chd --batch_size 16 --checkpoint_pretrain_interval 10 --epochs 100 \
---data_dir "datasets/chd/out_unlabeled/" --do_contrast --lr 0.1 \
---experiment_name your_experiment_name_ --save MACL --slice_threshold 0.1 \
+--model_name UNet2D_MACL --find_unused_parameters \
+--dataset chd --batch_size 16 --checkpoint_pretrain_interval 5 --epochs 100 \
+--data_dir "/data/zs_data/datasets/chd/out_unlabeled/" --do_contrast --lr 0.01 \
+--experiment_name CHD_pretrain_your_experiment_name_ --save JCL --slice_threshold 0.1 \
 --temp 0.1 --patch_size 512 512 --initial_filter_size 32 --classes 512 \
---contrastive_method 'macl' --scale_factor 0.25 \
---pixel_use --parallel DDP --reduce_memory_mode 'sample' --stride 16 --AMP \
---lambda_global 1.0 --lambda_dense 0.5 --lambda_er 1.0
+--contrastive_method pcl --GPU_Name '0,1' --scale_factor 0.25 --pixel_use \
+--parallel DDP --alpha 0.5 --alpha_ER 1.0 --AMP --n_segments 100 --compactness 10
 
 # Pre-train on BraTS2018 (MRI, for multi-organ / ROI segmentation)
 CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nnodes=1 --nproc_per_node=2 --master_port 21182 \
 train_contrast.py --device cuda:0 \
---model_name UNet2D_MACL --ssl_method MACL \
---dataset BraTS --batch_size 16 --checkpoint_pretrain_interval 10 --epochs 100 \
---data_dir "datasets/BraTS_unlabeled/unlabeled" --do_contrast --lr 0.1 \
---experiment_name your_experiment_name_ --save MACL --slice_threshold 0.1 \
+--model_name UNet2D_MACL --find_unused_parameters \
+--dataset BraTS --batch_size 32 --checkpoint_pretrain_interval 10 --epochs 100 \
+--data_dir "/data1/zs_data/BraTS_unlabeled/unlabeled" --do_contrast --lr 0.01 \
+--experiment_name BraTS_pretrain_your_experiment_name_ --save JCL --slice_threshold 0.05 \
 --temp 0.1 --patch_size 192 192 --initial_filter_size 32 --classes 512 \
---contrastive_method 'macl' --scale_factor 0.25 \
---pixel_use --parallel DDP --reduce_memory_mode 'sample' --stride 1 --AMP \
---mode pretrain --lambda_global 1.0 --lambda_dense 0.5 --lambda_er 1.0
+--contrastive_method pcl --GPU_Name '0,1' --scale_factor 0.25 \
+--pixel_use --parallel DDP --alpha 0.5 --alpha_ER 1.0 --AMP \
+--mode pretrain --n_segments 100 --compactness 10
 
 # Pre-train on KiTS2019 (CT, for ROI segmentation)
-CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nnodes=1 --nproc_per_node=2 --master_port 25634 \
+CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nnodes=1 --nproc_per_node=2 --master_port 29244 \
 train_contrast.py --device cuda:0 \
---model_name UNet2D_MACL --ssl_method MACL \
+--model_name UNet2D_MACL --find_unused_parameters \
 --dataset KiTS --batch_size 16 --checkpoint_pretrain_interval 10 --epochs 100 \
---data_dir "datasets/KITS/" --do_contrast --lr 0.1 \
---experiment_name your_experiment_name_ --save MACL --slice_threshold 0.1 \
+--data_dir "/mnt/nasv3/zs/datasets/KITS" --do_contrast --lr 0.01 \
+--experiment_name KiTS_pretrain_your_experiment_name_ --save JCL --slice_threshold 0.1 \
 --temp 0.1 --patch_size 512 512 --initial_filter_size 32 --classes 512 \
---contrastive_method 'macl' --scale_factor 0.25 \
---pixel_use --parallel DDP --reduce_memory_mode 'sample' --stride 16 --AMP \
---lambda_global 1.0 --lambda_dense 0.5 --lambda_er 1.0
+--contrastive_method pcl --GPU_Name '0,1' --scale_factor 0.25 --pixel_use \
+--parallel DDP --alpha 0.5 --alpha_ER 1.0 --AMP \
 ```
 
 ### Key Pre-training Parameters
@@ -206,48 +187,29 @@ train_contrast.py --device cuda:0 \
 
 ## Fine-tuning
 
-```bash
-# Fine-tune on ACDC with 10% annotations
-python finetune.py \
-    --pretrained checkpoints/MACL_CHD/pretrained.pth \
-    --dataset ACDC \
-    --data_path data/downstream/ACDC \
-    --output_dir output/MACL_ACDC_10pct \
-    --label_ratio 0.1 \
-    --epochs 100 \
-    --batch_size 5 \
-    --lr 5e-4
+*bash finetune.sh*
 
-# Fine-tune on MMWHS with 25% annotations
-python finetune.py \
-    --pretrained checkpoints/MACL_CHD/pretrained.pth \
-    --dataset MMWHS \
-    --data_path data/downstream/MMWHS \
-    --output_dir output/MACL_MMWHS_25pct \
-    --label_ratio 0.25 \
-    --epochs 100 \
-    --batch_size 5 \
-    --lr 5e-4
+```bash
+# Fine-tune on ACDC with 10% / 25% annotations
+samples=("8" "20") # 8, 20
+for sample in "${samples[@]}";
+do
+echo "sample=${sample}";
+CUDA_VISIBLE_DEVICES=0,1 python -m torch.distributed.launch --nnodes=1 --nproc_per_node=2 --master_port 24895 \
+train_supervised.py --device cuda:0 --ssl_method JCL \
+--pretrained_model_path 'model_pth/MACL_CHD.pth' --restart \
+--batch_size 5 --epochs 100 \
+--data_dir "dataset/acdc/out_labeled/" \
+--lr 5e-4 --min_lr 5e-6 --dataset acdc --patch_size 352 352 \
+--experiment_name ACDC_CHD_your_experiment_name_"${sample}"_ --save epochs_100_batchsize_5x2GPU_lr_5e-6-5e-4 \
+--initial_filter_size 32 --classes 4 --enable_few_data --sampling_k "${sample}" \
+--data_split_list data_split_list.txt \
+--parallel DDP --checkpoint_finetune_interval 10 --GPU_Name '0,1' \
+--model_name 'UNet2D_JCL'
+done
 ```
 
 During fine-tuning, the two-block decoder used in pre-training is extended to the full decoder to produce full-resolution segmentation maps.
-
----
-
-## Evaluation
-
-```bash
-# Evaluate on a single dataset
-python eval.py \
-    --model_path output/MACL_ACDC_10pct/best.pth \
-    --dataset ACDC \
-    --data_path data/downstream/ACDC
-
-# Evaluate on all 8 downstream datasets
-bash scripts/eval_all.sh
-```
-
-Metrics: **DSC** (↑), **JC** (↑), **HD95** (↓), **ASD** (↓)
 
 ---
 
@@ -284,15 +246,16 @@ MACL/
 If you find MACL useful in your research, please cite our paper:
 
 ```bibtex
-@ARTICLE{macl,
-  author={Zeng, Shuang and Zhu, Lei and Zhang, Xinliang and Chen, Qian and He, Hangzhou and Jin, Lujia and Tian, Zifeng and Xie, Zhaoheng and Nnamdi, Micky C. and Shi, Wenqi and Tamo, J Ben and Wang, May D. and Lu, Yanye},
-  journal={IEEE Journal of Biomedical and Health Informatics},
-  title={Multi-level Asymmetric Contrastive Learning for Medical Image Segmentation Pre-training},
+@ARTICLE{MACL,
+  author={Zeng, Shuang and Zhu, Lei and Zhang, Xinliang and Chen, Qian and He, Hangzhou and Jin, Lujia and Tian, Zifeng and Xie, Zhaoheng and Nnamdi, Micky C and Shi, Wenqi and Tamo, J Ben and Wang, May D. and Lu, Yanye},
+  journal={IEEE Journal of Biomedical and Health Informatics}, 
+  title={Multi-level Asymmetric Contrastive Learning for Medical Image Segmentation Pre-training}, 
   year={2026},
+  volume={},
+  number={},
   pages={1-14},
-  keywords={Medical image segmentation;Self-supervised learning;Contrastive learning;Pre-training;Encoder-decoder networks},
-  doi={10.1109/JBHI.2026.3669549}
-}
+  keywords={Decoding;Image segmentation;Contrastive learning;Medical diagnostic imaging;Feature extraction;Training;Collaboration;Bioinformatics;Representation learning;Annotations;Medical Image Segmentation;Self-supervised Learning;Contrastive Learning},
+  doi={10.1109/JBHI.2026.3669549}}
 ```
 
 ---
