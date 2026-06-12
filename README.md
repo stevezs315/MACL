@@ -218,24 +218,36 @@ During fine-tuning, the two-block decoder used in pre-training is extended to th
 ```text
 MACL/
 ├── assets/               # Figures and illustrations
-├── checkpoints/          # Pre-trained model weights
-├── data/                 # Dataset directory
-├── models/
-│   ├── unet.py           # UNet backbone
-│   ├── macl.py           # MACL pre-training framework
-│   └── modules/
-│       ├── projector.py  # Image-level and pixel-level projectors
-│       ├── decoder.py    # Partial decoder for asymmetric pre-training
-│       └── losses.py     # Multi-level contrastive losses
-├── datasets/             # Dataset loaders and pre-processing scripts
-├── utils/
-│   ├── augmentations.py  # Spatial / non-spatial augmentations
-│   └── metrics.py        # Evaluation metrics
-├── scripts/              # Training and evaluation scripts
-├── train_contrast.py     # Pre-training entry point
-├── finetune.py           # Fine-tuning entry point
-├── eval.py               # Evaluation entry point
-├── requirements.txt
+├── dataset/              # Dataset loaders and data utilities
+│   ├── acdc.py           # ACDC dataset loader
+│   ├── BraTS.py          # BraTS2018 dataset loader
+│   ├── CHAOS.py          # CHAOS dataset loader
+│   ├── chd.py            # CHD dataset loader
+│   ├── hvsmr.py          # HVSMR dataset loader
+│   ├── ISIC.py           # ISIC2018 dataset loader
+│   ├── KiTS.py           # KiTS2019 dataset loader
+│   ├── mmwhs.py          # MMWHS dataset loader
+│   ├── MSD.py            # Medical Segmentation Decathlon loader
+│   └── utils.py          # Dataset helper functions
+├── loss/
+│   └── contrast_loss.py  # Contrastive learning losses
+├── model_pth/            # Released pre-trained MACL weights
+├── network/
+│   └── unet2d.py         # 2D UNet backbone and MACL network modules
+├── results/              # Evaluation outputs
+├── runs/                 # Training logs
+├── data_split_list.txt   # Dataset split list
+├── evaluation.py         # Evaluation entry point
+├── experiment_log.py     # Experiment logging utilities
+├── finetune.sh           # Fine-tuning script examples
+├── lr_scheduler.py       # Learning rate scheduler
+├── metrics.py            # Segmentation metrics
+├── myconfig.py           # Experiment and training configuration
+├── pretrain.sh           # Pre-training script examples
+├── train_contrast.py     # MACL pre-training entry point
+├── train_supervised.py   # Supervised fine-tuning entry point
+├── utils.py              # General utility functions
+├── MACL_JBHI.pdf         # Paper PDF
 └── README.md
 ```
 
